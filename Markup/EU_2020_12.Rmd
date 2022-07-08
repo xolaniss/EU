@@ -1,0 +1,592 @@
+---
+lof: true
+lot: true
+output:
+  bookdown::word_document2:
+    reference_docx: template.docx
+  pdf_document:
+    fig_caption: yes
+    number_sections: yes
+    toc: true
+    includes:
+      in_header: preamble.tex
+      before_body: title.tex
+      after_body: backcover.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, dpi = 300, fig.pos = "H", fig.align = "center")
+options(xtable.floating = FALSE)
+```
+
+```{r loading_packages}
+library("tidyverse")
+library("readxl")
+library("zoo")
+library("ggthemes")
+library("gridExtra")
+library("knitr")
+library("kableExtra")
+library("magick")
+library("stringi")
+library("patchwork")
+library("gghighlight")
+library("xtable")
+library("scales")
+library("rvest")
+library("rebus")
+library("PNWColors")
+library("lubridate")
+```
+
+```{r data}
+SA <-
+  readRDS(file = "../Data/South_africa.rds")
+Provinces <-
+  readRDS(file = "../Data/Provinces.rds")
+Industry <-
+  readRDS(file = "../Data/Industry.rds")
+Labour_profile <-
+  readRDS(file = "../Data/Labour_profile.rds")
+Employment <-
+  readRDS(file = "../Data/Employment_industry.rds")
+OECD <-
+  readRDS(file = "../Data/OECD.rds")
+SA_GDP <-
+  readRDS(file = "../Data/SA_GDP.rds")
+```
+
+```{r functions}
+theme <-
+  theme_minimal(base_size = 6) +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "none",) # EU base theme
+theme_set(theme) # setting ggplot theme instead of using theme function
+
+eu_bar <-
+  function(data,
+           mapping,
+           label,
+           color_count,
+           periodicity = 0.25,
+           scale = scale_x_yearqtr) {
+    bar <-  ggplot(data, mapping) +
+      geom_bar(stat = "identity", width = 0.18) +
+      labs(x = "", y = label) +
+      scale_fill_manual(values = pnw_palette("Winter", color_count))
+    
+    if (periodicity == 0.25)
+      bar + scale_x_yearqtr(breaks = seq(
+        from = min(data$Period),
+        to = max(data$Period),
+        by = periodicity
+      ),
+      format = "%Y-Q%q")
+    
+    else
+      bar + scale_x_yearmon(breaks = seq(
+        from = min(data$Period),
+        to = max(data$Period),
+        by = periodicity
+      ),
+      format = "%Y-%b")
+  } # EU bar ggplot with changing x scales
+
+eu_line <-
+  function(data,
+           mapping,
+           label,
+           color_count,
+           periodicity = 0.25) {
+    bar <-  ggplot(data, mapping) +
+      geom_line() +
+      geom_point(size = 2) +
+      labs(x = "", y = label) +
+      scale_color_manual(values = pnw_palette("Winter", color_count))
+    
+    if (periodicity == 0.25)
+      bar + scale_x_yearqtr(breaks = seq(
+        from = min(data$Period),
+        to = max(data$Period),
+        by = periodicity
+      ),
+      format = "%Y-Q%q")
+    
+    else
+      bar +
+      scale_x_yearmon(breaks = seq(
+        from = min(data$Period),
+        to = max(data$Period),
+        by = periodicity
+      ),
+      format = "%Y-%b")
+  } # EU line ggplot with changing x scales
+
+oecd_countries <- function(data, start_period = "2019 Q1"){
+  data %>% 
+    filter(
+    Country %in% c(
+      "OECD",
+      "JPN",
+      "CHN",
+      "USA",
+      "BRA",
+      "DEU",
+      "IND",
+      "GBR",
+      "RUS",
+      "FRA"
+    ),
+    Unit == "PC"
+  ) %>%
+  filter(Period > start_period) %>%
+  mutate(Country = str_replace_all(
+    Country,
+    c(
+      "DEU" = "Germany",
+      "JPN" = "Japan",
+      "USA" = "United States",
+      "BRA" = "Brazil",
+      "IND" = "India",
+      "RUS" = "Russia",
+      "FRA" = "France",
+      "GBR" = "Great Britain"
+    )
+  ))
+  
+} # for cleaning OECD data for specified countries
+
+sa_gdp <- function(data, measure = "Percentage Change", start_period = "2019 Q1" ) {
+  data %>% 
+    filter(Unit == measure, Period > start_period)
+} # for sorting SA_GDP data
+
+```
+
+```{r, results='asis', eval=(opts_knit$get('rmarkdown.pandoc.to') == 'latex')}
+cat('\\pagebreak')
+```
+
+# Introduction
+
+# Global Economy
+
+## Economic growth
+
+```{r, fig.width=5, fig.height= 3, fig.cap= "Economic Growth in Key Economies"}
+
+gross_domestic_product <- oecd_countries(OECD$gross_domestic_product)
+
+gross_domestic_product_gg <-
+  eu_bar(gross_domestic_product, aes(x =  Period, y = Value, fill = Country),"Quarter on Quarter Growth (%)", 9) +
+  facet_wrap(vars(Country), nrow = 3) + 
+  labs(caption = "Source: Organization for Economic Cooperation and Development (2020)")
+plot0 <- gross_domestic_product_gg
+print(plot0   + plot_layout(guides = "collect"))
+write.csv(gross_domestic_product, " gross_domestic_product.csv")
+
+```
+
+## Production
+
+```{r, fig.width=5, fig.height= 3, fig.cap= "Industrial Output in Key Economies"}
+
+industrial_production <- oecd_countries(OECD$industrial_production) 
+
+industrial_production_gg <-
+  eu_bar(industrial_production, aes(x =  Period, y = Value, fill = Country), 
+  "Quarter on Quarter Growth (%)", 8) +
+  facet_wrap(vars(Country), nrow = 2) +
+  coord_flip() +
+  labs(caption = "Source: Organization for Economic Cooperation and Development (2020)")
+  
+plot_1 <-  industrial_production_gg
+
+print(plot_1    + plot_layout(guides = "collect"))
+
+write.csv(industrial_production, "industrial_production.csv")
+
+```
+
+```{r, fig.width=5, fig.height= 3, fig.cap= "Manufacturing Confidence Index in Key Economies."}
+
+manufacuturing_confidence <- oecd_countries(OECD$manufacturing_confidence) 
+
+manufacuturing_confidence_gg <-
+  eu_line(manufacuturing_confidence,
+         aes(x =  Period, y = Value, col = Country), "Quarter on Quarter Growth (%)", 6) +
+  facet_wrap(vars(Country), nrow = 2) +
+  labs(caption = "Source: Organization for Economic Cooperation and Development (2020)")
+
+plot_2 <-  manufacuturing_confidence_gg
+print(plot_2    + plot_layout(guides = "collect"))
+
+write.csv(manufacuturing_confidence, "manufacuturing_confidence.csv")
+
+```
+
+## Retail Sales
+
+```{r, fig.width=5, fig.height= 3, fig.cap= "Retail Sales in Key Economies" }
+
+retail_sales <- oecd_countries(OECD$retail_sales)
+
+retail_sales_gg <-
+  eu_bar(retail_sales, aes(x =  Period, y = Value, fill = Country), "Quarter on Quarter Growth (%)", 6) +
+  facet_wrap(vars(Country), nrow = 2) +
+  labs(caption = "Source: Organization for Economic Cooperation and Development (2020)")
+plot3 <- retail_sales_gg
+print(plot3   + plot_layout(guides = "collect"))
+
+write.csv(retail_sales, "retail_sales.csv")
+
+```
+
+## Policy interventions
+
+# South Africa Economy
+
+## Economic growth
+
+```{r, fig.width=5, fig.height= 2, fig.cap= "Gross Domestic Product"}
+
+sa_gdp_yy <- sa_gdp(SA_GDP$`Gdp At Market Prices`)
+sa_gdp_qq <-
+  sa_gdp(SA_GDP$`Gdp At Market Prices`, "Annualised Percentage Change")
+
+sa_gdp_yy_gg <-
+  eu_bar(sa_gdp_yy,
+         aes(x =  Period, y = Value, fill = Unit),
+         "Year on Year Growth (%)",
+         1) + coord_flip() 
+  
+sa_gdp_qq_gg <-
+  eu_line(
+    sa_gdp_qq ,
+    aes(x = Period, y = Value, col = Unit),
+    "Annualised Quarter on Quarter Growth (%)",
+    1
+  ) + labs(caption = "Source: Statistics South Africa (2020). Note: The annualised data is seasonally adjusted and constant ")
+
+plot_4 <- sa_gdp_yy_gg + sa_gdp_qq_gg 
+print(plot_4    + plot_layout(guides = "collect"))
+
+write.csv(sa_gdp_yy, "SA_GDP_yony.csv")
+write.csv(sa_gdp_qq, "SA_GDP_qonq.csv")
+
+```
+
+```{r, fig.width=6, fig.height= 5, fig.cap= "Industry Growth"}
+
+sa_gdp_industry <- do.call(rbind, SA_GDP) %>%
+  filter(
+    Name %in%
+      c(
+        "Agriculture, Forestry And Fishing",
+        "Construction",
+        "Electricity, Gas And Water",
+        "Finance, Real Estate And Business Services",
+        "General Government Services",
+        "Manufacturing",
+        "Mining And Quarrying",
+        "Personal Sevices" ,
+        "Transport, Storage And Communication",
+        "Wholesale And Retail Trade, Hotels And Restaurants"
+      ),
+    Period > "2019 Q1",
+    Unit == "Annualised Percentage Change"
+  )
+
+sa_gdp_industry_gg <-
+  eu_bar(
+    sa_gdp_industry ,
+    aes(x = Period, y = Value, fill = Name),
+    "Annualised Quarter on Quarter Growth (%)",
+    10
+  ) +
+  facet_wrap(vars(Name), ncol = 3, scales = "free") +  coord_flip() +
+   labs(caption = "Source: Statistics South Africa (2020)")
+
+plot_5 <- sa_gdp_industry_gg
+print(plot_5   + plot_layout(guides = "collect"))
+
+write.csv(sa_gdp_industry, "SA_industry_gdp.csv")
+
+```
+
+## Consumer and business confidence
+
+```{r, fig.width=5, fig.height= 3.6, fig.cap = "Consumer and Business Confidence "}
+
+sa_cci <-
+  SA$South_Africa_CCI %>% mutate(Period = as.yearqtr(Period)) %>% pivot_longer(-Period, "measure", "value") %>% filter(measure == "Year to Year % Change", Period > "2019 Q1")
+sa_bci <-
+  SA$South_Africa_BCI %>% mutate(Period = as.yearqtr(Period)) %>% pivot_longer(-Period, "measure", "value") %>% filter(measure == "Year to Year % Change", Period > "2019 Q1")
+sa_retail_sales <-
+  SA$South_Africa_Retail_Sales %>%  mutate(Period = as.yearmon(Period)) %>% pivot_longer(-Period, "measure", "value") %>% filter(measure == "Year to Year % Change", Period > "October 2019")
+sa_vehicle_sales <-
+  SA$South_Africa_Vehicle_Sales %>% select(Period:`Year to Year % Change`) %>%  pivot_longer(-Period, "measure", "value") %>% mutate(Period = as.yearmon(Period)) %>% filter(measure == "Year to Year % Change", Period > "October 2019")
+
+sa_cci_gg <-
+  eu_line(sa_cci,
+          aes(x = Period, y = value),
+          "Consumer Confidence Index (y-o-y (%))",
+          1) + geom_line(color = "#33454e") + geom_point(aes(fill = value), color = "#33454e") +
+   labs(caption = "Source: Bureau for Economic Research (2020)")
+  
+sa_bci_gg <-
+  eu_line(sa_bci,
+          aes(x = Period, y = value),
+          "Business Confidence Index (y-o-y (%))",
+          1) + geom_line(color = "#537380") + geom_point(aes(fill = value), color = "#537380") +
+   labs(caption = "Source: Bureau for Economic Research (2020)")
+sa_retail_sales_gg <-
+  eu_line(
+    sa_retail_sales,
+    aes(x = Period, y = value),
+    "Retail Sales (y-o-y (%))",
+    1,
+    periodicity = 1 / 12
+  ) + geom_line(color = "#81a9ad") + geom_point(aes(fill = value), color =  "#81a9ad") +
+  labs(caption = "Source: Statistics South Africa (2020))")
+sa_vehicle_sales_gg <-
+  eu_line(
+    sa_vehicle_sales,
+    aes(x = Period, y = value),
+    "Vehicle Sales (y-o-y (%))",
+    1,
+    periodicity = 1 / 12
+  ) + geom_line(color = "#2d2926") + geom_point(aes(fill = value), color = "#2d2926") +
+   labs(caption = "Source: NAAMSA (2020)")
+
+plot_7 <-
+  (sa_cci_gg  + sa_bci_gg) / (sa_retail_sales_gg + sa_vehicle_sales_gg)
+print(plot_7   + plot_layout(guides = "collect"))
+
+write.csv(sa_cci, "SA_CCI.csv")
+write.csv(sa_bci, "SA_BCI.csv")
+write.csv(sa_vehicle_sales, "SA_vehicle_sales.csv")
+write.csv(sa_retail_sales, "SA_retail_sales.csv")
+
+```
+
+## Labour market
+
+Statistics South Africa's data collection has been impacted by the COVID-19 pandemic[^1]. Face-to-face data collection has been suspended for the safety of field staff and respondents and replaced with telephonic surveys. This has necessitated various assumptions and corrections on behalf of Statistics South Africa. Households with telephones that could not be contacted in the second quarter of 2020 were assumed to have maintained the same employment status assigned to them in the first quarter of 2020. These households were also assumed to have maintained the same employment status that they were assigned in the fourth quarter of 2019, except for the workers who became employed in the fourth quarter of 2019 after being unemployed or Not Economically Active (NEA).
+
+[^1]: Statistics South Africa. (2020), Quarterly Labour Force Survey -- 2020Q3
+
+Since temporary jobs that exist only in the fourth quarter of each year are commonplace, these temporary job holders were treated as non-respondents for the first quarter of 2020 as their employment status could not be estimated to an acceptable degree. Households without telephones could not be contacted as a group and therefore this group has significantly different labour market characteristics from households with telephones. As a result, bias correction techniques were applied.
+
+Additional estimation required for the publications surveyed under COVID-19 resulted in publications with a larger margin of error. Furthermore, changes in data collection methodology means that these publications are not truly comparable with publications that were unaffected by the pandemic.
+
+```{r, fig.width=5, fig.height= 6, fig.cap = "Labour Market"}
+
+sa_labour_profile <- Labour_profile$South_Africa_labour_profile
+sa_labour_profile[sa_labour_profile == ''] <- NA
+sa_labour_profile <-
+  sa_labour_profile %>% fill(Sector, .direction = "down") %>%  pivot_longer(-c(Sector, Measure), "Period", "value") %>%
+  mutate(Period = as.yearqtr(Period)) %>%
+  filter(Measure != "Thousands")
+sa_labour_profile <-
+  sa_labour_profile %>% filter(Sector != " Industry Agriculture",
+                               Sector != " Industry Private households")
+sa_labour_profile_gg <-
+  eu_bar(sa_labour_profile , aes(x = Period, y = value, fill = Sector), "", 14) +
+  facet_wrap(vars(Sector, Measure), ncol = 3) +
+  labs(caption = "Source: Statistics South Africa (2020)")
+
+plot_8 <- sa_labour_profile_gg
+print(plot_8   + plot_layout(guides = "collect"))
+
+write.csv(sa_labour_profile, "SA_Labour.csv")
+
+```
+
+The figure above shows that South Africa's labour force was estimated at 21.2 million persons in the third quarter of 2020. This was an increase of approximately 15.1 per cent quarter on quarter and a decrease of approximately 8.2 per cent y-o-y. The quarterly increase of the labour force reflects a recovery from a relatively lower labour force in the second quarter caused by a significant higher number of NEA persons resulting from the imposed lockdown regulations.
+
+The lockdown also harmed employment opportunities, with a decrease of 13.6 per cent quarter on quarter and a decrease of 13.3 per cent year y-o-y estimated for the second quarter of 2020. This decline in employment opportunities left approximately 14.1 million workers employed. The informal and private household sectors were hit particularly hard, with quarter on quarter decreases of 21.9 and 23.6 per cent in employment, respectively. The relatively smaller employment decrease of 10.8 per cent in the formal sector was likely influenced by the increased difficulty retrenching formal workers due to fixed-term contracts and the fact that a larger portion of formal sector jobs can be performed remotely. However, employment rebounded in the third quarter, when it increased by 15.1 per cent, and the largest employment increase in absolute terms was the sector. Moreover, despite the third quarter increase in employment, an annual comparison shows a decrease in employment.
+
+The number of unemployed persons increased by 52.1 per cent and reached 6.5 million in the third quarter, after it decreased by 39.2 per cent to 4.3 million during the second quarter. The increase was largely due to discouraged work-seekers re-entering the market and increase the labour force, thus unemployment number. Hence the labour force participation rate recovered after it had dropped by 13pp to 47 per cent in the second and recovered to 54.2 per cent in the third quarter. The second quarter movements in the labour market are in line with those observed in the rest of the world as a result of the pandemic.
+
+## Consumer prices
+
+```{r, fig.width=5, fig.height= 3, fig.cap= "Consumer Inflation"}
+
+sa_cpi <-
+  SA$South_Africa_CPI %>% mutate(Period = as.yearmon(Period)) %>%
+  pivot_longer(-Period, "category", "value") %>%
+  filter(Period > "October 2019")
+
+sa_cpi_gg <-
+  eu_line(
+    sa_cpi ,
+    aes(x = Period, y = value, col = category),
+    "Consumer Price Inflation (%)",
+    6,
+    periodicity = 1 / 12
+  ) + facet_wrap(vars(category), nrow = 2) +
+  labs(caption = "Source: Statistics South Africa (2020)")
+
+
+plot_9 <- sa_cpi_gg
+print(plot_9   + plot_layout(guides = "collect"))
+
+write.csv(sa_cpi, "SA_CPI.csv")
+
+```
+
+## Policy interventions
+
+# Gauteng Economy
+
+## Economic growth
+
+```{r, fig.width=5, fig.height= 3, fig.cap = "Regional Gross Domestic Product"}
+
+regional_gdp <-
+  Provinces$Province_GDP %>% mutate(Period = as.yearqtr(Period)) %>%
+  pivot_longer(-Period, "province", "value") %>%
+  filter(Period > "2019 Q1")
+
+regional_gdp_gg <-
+  eu_bar(
+    regional_gdp ,
+    aes(x = Period, y = value, fill = province),
+    "Quarter on Quarter Growth (%)",
+    10
+  ) + facet_wrap(vars(province), ncol = 3) +
+  labs(caption = "Source: Quantec Research (2020). Note: All GDP data is seasonally adjusted and constant.")
+
+plot_10 <-
+  regional_gdp_gg
+print(plot_10   + plot_layout(guides = "collect"))
+
+```
+
+```{r, fig.width=5, fig.height= 5.5, fig.cap= "Gauteng Industry Growth"}
+
+gauteng_industry_gdp <- Industry$Province_Industry_Growth
+gauteng_industry_gdp[gauteng_industry_gdp == ''] <- NA
+gauteng_industry_gdp[gauteng_industry_gdp == ' '] <- NA
+gauteng_industry_gdp <-
+  gauteng_industry_gdp %>% fill(Sector, .direction = "down") %>%  pivot_longer(-c(Sector, Measure), "Period", "value") %>%
+  mutate(Period = as.yearqtr(Period)) %>%
+  filter(Measure == " % Change") %>%
+  mutate(
+    Sector = str_replace_all(
+      Sector,
+      "Wholesale and retail trade; hotels and restaurants ",
+      "Wholesale and retail trade, and hotels"
+    ),
+    Measure = str_replace_all(Measure,
+                              " % Change",
+                              "Quarter on Quarter Growth (%)")
+  )
+
+gauteng_industry_gdp_gg <-
+  eu_bar(gauteng_industry_gdp,
+         aes(x = Period, y = value, fill = Sector),
+         "",
+         14) + facet_wrap(vars(Sector, Measure), ncol = 3) + coord_flip() +
+   labs(caption = "Source: Quantec Research (2020). Note: All GDP data is seasonally adjusted and constant.")
+
+plot_11 <- gauteng_industry_gdp_gg
+print(plot_11   + plot_layout(guides = "collect"))
+
+write.csv( gauteng_industry_gdp, "GDPR.csv")
+                                                   
+```
+
+## Labour market
+
+The Gauteng unemployment rate shockingly declined in the second quarter of 2020 to reach 26.4 per cent, equating to 5pp when compared to the first quarter. This was the lowest unemployment rate since the fourth quarter of 2014[^2]. The decline was not, however, indicative of an improving labour market but instead reflects the unemployment rate definition used in Statistics South Africa's Quarterly Labour Force Survey (QLFS). This definition requires that eligible job seekers actively look for work in order to be classified as unemployed, which was impossible during the lockdown. Thus, as per the official definition, the unemployment rate fell. This is despite job losses of over half a million in the second quarter of 2020, which were the highest since the QLFS started.
+
+[^2]: Statistics South Africa. (2014). Quarterly Labour Force Survey- 2014Q4.
+
+```{r, fig.width=5, fig.height= 4, fig.cap = "Provincial Unemployment Rates"}
+
+regional_unemployment <-
+  Provinces$Province_Unemployment %>% mutate(Period = as.yearqtr(Period)) %>%
+  pivot_longer(-Period, "province", "value") %>%
+  filter(Period > "2019 Q1")
+
+regional_unemployment_gg <-
+  eu_line(regional_unemployment , aes(x = Period, y = value, col = province), "Unemployment Rate (%)", 10) +     
+  facet_wrap(vars(province), ncol = 3) +
+  labs(caption = "Source: Statistics South Africa (2020)")
+  
+  
+
+plot_12 <- regional_unemployment_gg
+print(plot_12 + plot_layout(guides = "collect"))
+
+write.csv(regional_unemployment, "regional_unemployement.csv")
+
+
+```
+
+Evidently, the lock-down restrictions were relaxed in the third quarter of 2020, which resulted increase in the number of people who were looking for work, and the unemployment rate reverted to its trend of high unemployment; reaching 33.7 per cent in the third quarter of 2020. Moreover, employment in the third was very low relative to the labour force growth and high levels of unemployment, hence the spike in unemployment rate.
+
+```{r eval=FALSE, fig.cap=, fig.height=7, fig.width=6, include=FALSE, fig.cap= "Gauteng Labour Profile"}
+
+gauteng_labour_profile <- Labour_profile$Province_labour_profile
+gauteng_labour_profile[gauteng_labour_profile == ''] <- NA
+gauteng_labour_profile <-
+  gauteng_labour_profile %>% fill(Sector, .direction = "down") %>%  pivot_longer(-c(Sector, Measure), "Period", "value") %>%
+  mutate(Period = as.yearqtr(Period)) %>%
+  filter(Measure != "Thousands")
+gauteng_labour_profile <-
+  gauteng_labour_profile %>% filter(Sector != " Industry Agriculture",
+                                    Sector != " Industry Private households")
+
+gauteng_labour_profile_gg <-
+  eu_bar(gauteng_labour_profile,
+         aes(x = Period, y = value, fill = Sector),
+         "%",
+         14) +
+  facet_wrap(vars(Sector, Measure), ncol = 3) +
+  labs(caption = "Source: Statistics South Africa (2020)")
+
+plot_13 <- gauteng_labour_profile_gg
+print(plot_13 + plot_layout(guides = "collect"))
+
+
+
+```
+
+The number of discouraged work-seekers grew further in the second quarter of 2020. This indicates that the labour market in Gauteng was not favourable to those who were looking for work, resulting in more people dropping out of the active labour market. Subsequently, the labour force participation rate also fell, as a result of lower labour force activity combined with an increase in discouraged work-seekers, caused by the lockdown.
+
+Furthermore, although the lockdown has caused historical job losses, average quarterly employment growth was -1.0 per cent between the first quarter of 2019 and the first quarter of 2020. During this same period, the size labour force increased by 1.0 per cent. This means that employment growth was declining even before the impact of the lockdown.
+
+## Consumer prices
+
+```{r, fig.width=5, fig.height= 3, fig.cap= "Provincial Consumer Inflation"}
+
+regional_cpi <-
+  Provinces$Province_CPI %>% mutate(Period = as.yearmon(Period)) %>%
+  pivot_longer(-Period, "province", "value") %>%
+  filter(Period > "October 2019")
+
+regional_cpi_gg <-
+  eu_line(
+    regional_cpi ,
+    aes(x = Period, y = value, col = province),
+    "Consumer Price Inflation (%)",
+    10,
+    periodicity = 1 / 12
+  ) + facet_wrap(vars(province), ncol = 3) +
+    labs(caption = "Source: Statistics South Africa (2020)")
+
+plot_14 <- regional_cpi_gg
+print(plot_14 + plot_layout(guides = "collect"))
+
+write.csv(regional_cpi, "regional_cpi.csv")
+
+```
+
+## Policy interventions
+
+# Concluding Remarks
+
+\`

@@ -1,0 +1,2 @@
+load("/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/WEO.rds")
+load("/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/Employment_industry.rds")

@@ -1,0 +1,104 @@
+library("OECD")
+library("tidyverse")
+library("lubridate")
+library("xts")
+library("here")
+
+# Functions ---------------------------------------------------------------
+OECD_database_query <-
+  function(database, query, start_time, end_time) {
+    get_dataset(database, query, start_time = start_time, end_time = end_time) %>% select(LOCATION, UNIT, obsTime, obsValue) %>%
+     rename(
+       Country = LOCATION,
+       Period = obsTime,
+       Value = obsValue,
+       Unit = UNIT
+     ) %>%
+     mutate(Period = as.yearqtr(parse_date_time(Period, "Y-q")))
+  }
+query_string_quarterly <- function(data_subject_code) {
+  country_string <-
+    ".AUS+AUT+BEL+CAN+CHL+COL+CZE+DNK+EST+FIN+FRA+DEU+GRC+HUN+ISL+IRL+ISR+ITA+JPN+KOR+LVA+LTU+LUX+MEX+NLD+NZL+NOR+POL+PRT+SVK+SVN+ESP+SWE+CHE+TUR+GBR+USA+EU28+G-7+OECDE+G-20+OECD+NMEC+ARG+BRA+CHN+IND+IDN+RUS+SAU+ZAF.GP+GY+ST."
+  frequency_string <- "Q"
+  paste0(data_subject_code, country_string, frequency_string)
+}
+query_list_mapper <- as_mapper(~ query_string_quarterly(.x))
+OECD_mapper <-
+  as_mapper(~ OECD_database_query("KEI", .x, start_year , current_year))
+list_RDS_export <- function (export_list, name) {
+  saveRDS(export_list, file = name)
+}
+
+# End Year ----------------------------------------------------------------
+current_year <- year(now())
+
+# Start Year --------------------------------------------------------------
+lag = 2
+start_year <- current_year - lag
+
+# Subject List --------------------------------------------------------------
+query_list_names <-
+  c(
+    "industrial_production_query",
+    "gross_domestic_product_query",
+    "private_consumption_query",
+    "public_consumption_query",
+    "gross_capital_formation_query",
+    "exports_query",
+    "imports_query",
+    "consumer_prices_query",
+    "total_employment_query",
+    "retail_sales_query",
+    "passenger_car_registrations_query",
+    "consumer_confidence_query",
+    "manufacturing_confidence_query",
+    "Exchange_rate_average_per_dollar_query"
+  )
+subject_list <-
+  c(
+    "PRINTO01",
+    "NAEXKP01",
+    "NAEXKP02",
+    "NAEXKP03",
+    "NAEXKP04",
+    "NAEXKP06",
+    "NAEXKP07",
+    "CPALTT01",
+    "LFEMTTTT",
+    "SLRTTO01",
+    "SLRTCR03",
+    "CSCICP02",
+    "BSCICP02",
+    "CCUSMA02"
+  )
+query_list <-
+  map(subject_list, query_list_mapper) %>% set_names(query_list_names)
+
+# Query -------------------------------------------------------------------
+names <-
+  c(
+    "industrial_production",
+    "gross_domestic_product",
+    "private_consumption",
+    "public_consumption",
+    "gross_capital_formation",
+    "exports",
+    "imports",
+    "consumer_prices",
+    "total_employment",
+    "retail_sales",
+    "passenger_car_registrations",
+    "consumer_confidence",
+    "manufacturing_confidence",
+    "Exchange_rate_average_per_dollar"
+  )
+result <- map(query_list, OECD_mapper) %>% set_names(names)
+
+filter(result$retail_sales, Period =="2020 Q2", Country == "AUS")
+
+#write.csv(filter(result$industrial_production, Period =="2020 Q3"), "file.csv")
+str(result$industrial_production)
+
+
+# RDS Export --------------------------------------------------------------
+list_RDS_export(result, here("OECD.rds"))

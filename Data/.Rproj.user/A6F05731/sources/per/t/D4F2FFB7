@@ -1,0 +1,26 @@
+{
+    "id": "D4F2FFB7",
+    "path": "~/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/Statssa_Retail_Sales.R",
+    "project_path": "Statssa_Retail_Sales.R",
+    "type": "r_source",
+    "hash": "1206880307",
+    "contents": "",
+    "dirty": false,
+    "created": 1607614076702.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "10,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1607622794,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1607622794766,
+    "read_only": false,
+    "read_only_alternatives": []
+}

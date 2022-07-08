@@ -1,0 +1,26 @@
+{
+    "id": "E1B2674A",
+    "path": "~/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/Statssa_GDP.R",
+    "project_path": "Statssa_GDP.R",
+    "type": "r_source",
+    "hash": "3780350027",
+    "contents": "",
+    "dirty": false,
+    "created": 1607416363267.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "31,18",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1607426476,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1607426476186,
+    "read_only": false,
+    "read_only_alternatives": []
+}

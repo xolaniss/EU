@@ -1,0 +1,50 @@
+library("tidyverse")
+library("lubridate")
+library("rebus")
+library("xts")
+library("here")
+library("filesstrings")
+library("readxl")
+library("xts")
+library("httr")
+library("glue")
+
+# Functions ---------------------------------------------------------------
+download <- function(){
+urls <- expand_grid(year, months) %>% 
+  glue_data("http://www.statssa.gov.za/timeseriesdata/Excel/P0141%20-%20CPI%20Average%20Prices%20All%20urban%20({year}{months}).zip" )
+
+file_names <- expand_grid(year, months) %>% 
+  glue_data("CPI_average_prices_{year}{months}.zip")
+
+download_mapper <- safely(~download.file(.x, .y, method = "auto"))
+walk2(urls, file_names, download_mapper)
+}
+
+CPI_unzip_excel <- function(filename) {
+  outDir <- here()
+  unzip(paste0(filename, ".zip"), exdir = outDir)
+  file.rename(here("CPI_Average Prices_All urban(202011).xlsx"), here(paste0(filename, ".xlsx")))
+}
+
+# URL ---------------------------------------------------------------------
+year <- year(Sys.Date())
+months <- month(1:12)
+
+
+# Data Download -----------------------------------------------------------
+download()
+CPI_unzip_excel("CPI_average_prices_202011")
+
+# Data Import -------------------------------------------------------------
+CPI_average_prices <- read_excel(here("CPI_average_prices.xlsx"), col_names = TRUE)
+
+
+# Data Cleaning -----------------------------------------------------------
+
+CPI_average_prices <- CPI_average_prices %>% select(-c(`March Online Price`))
+names <- as.character(format(seq(as.Date("2017-01-01"), as.Date("2020-10-01"), by = "months"), "%Y-%m"))
+names(CPI_average_prices)[10:55] <- names
+
+
+

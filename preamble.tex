@@ -1,0 +1,82 @@
+% !TeX program = XeLaTeX
+\documentclass[12pt]{article}
+% \usepackage{fontspec}
+% \setmainfont{Lato}[
+%   Path = font/Lato/,
+%   UprightFont = Lato-Regular,
+%   ItalicFont = Lato-Thin,
+%   BoldFont = Lato-Bold,
+%   BoldItalicFont = Lato-BoldItalic
+% ]
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{charter}
+\usepackage{apacite}
+\usepackage[round]{natbib} 
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage [font={small,bf}, figureposition=top]{caption}
+\usepackage[page,header]{appendix}
+\usepackage{titletoc}
+\usepackage{booktabs,caption}
+\usepackage[flushleft]{threeparttable}
+\usepackage{tabularx}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage[bottom]{footmisc}
+\usepackage{xcolor}
+\usepackage{scrextend}
+\deffootnote[2em]{2em}{1em}{\textsuperscript{\thefootnotemark}\,}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\usepackage[a4paper, width=150mm, top=25mm, bottom=25mm]{geometry}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage{sectsty}
+\definecolor{MyBlue}{RGB}{9,90,155}
+\definecolor{MyBlue1}{RGB}{79,129,189}
+\definecolor{MyBrown}{RGB}{187,124,50}
+\definecolor{MyBrown1}{RGB}{235,124,50}
+\sectionfont{\color{MyBlue}}
+\subsectionfont{\color{MyBlue1}}
+\usepackage{sidenotes}
+\usepackage{comment}
+\usepackage{rotating} 
+\usepackage{lipsum}
+\usepackage{eurosym}
+\usepackage{csquotes}
+\setlength{\parindent}{0pt} %removing paragraph indentation
+
+\usepackage{Sweave}
+\begin{document}
+\input{EU_2020_12-concordance}
+\captionsetup[table]{list=yes}
+\captionsetup[figure]{list=yes}
+\pagestyle{plain}
+
+\newgeometry{margin=0cm} %tiny margins
+
+\begin{center}
+\vspace*{3cm}
+\color{black}{\Huge{\textbf{ECONOMIC UPDATE}}}
+\vspace{2.5cm}\\
+\noindent
+\makebox[\textwidth]{\includegraphics[width=\textwidth, height=15cm]{/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/images/Front.jpg}}
+\vfill
+\includegraphics[width = 6cm, height = 2cm]{/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/images/gpt-Logo-Web.jpg}
+\end{center}
+
+\vspace{1cm}
+
+\restoregeometry
+
+\pagenumbering{roman}
+\begin{center}
+\vspace*{8 cm}
+\color{black}{\Huge{\textbf{ECONOMIC UPDATE}}}
+\vspace{10 cm}\\
+\color{MyBlue}\large{\textbf{Third Quarter: 2020/2021}}
+\vfill
+\includegraphics[width = 6cm, height = 2cm]{/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/images/gpt-Logo-Web.jpg}
+\end{center}
+
+\vspace{10cm}

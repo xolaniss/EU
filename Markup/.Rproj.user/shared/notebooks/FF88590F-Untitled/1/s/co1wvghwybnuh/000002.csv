@@ -1,0 +1,4 @@
+"0","knitr::opts_chunk$set(echo = FALSE)"
+"0","options(knitr.table.format = function() {"
+"0","  if (knitr::is_latex_output()) 'latex' else 'pandoc'"
+"0","})"

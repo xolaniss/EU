@@ -1,0 +1,26 @@
+{
+    "id": "234EB579",
+    "path": "~/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/OECD.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "568403545",
+    "contents": "",
+    "dirty": false,
+    "created": 1609829093404.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "15,10",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1609838815,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1609838815,
+    "read_only": false,
+    "read_only_alternatives": []
+}

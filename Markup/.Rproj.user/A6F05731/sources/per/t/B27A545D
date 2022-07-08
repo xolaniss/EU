@@ -1,0 +1,31 @@
+{
+    "id": "B27A545D",
+    "path": "~/Desktop/EU_Analysis/Sweave/EU_2020_12/Markup/EU_2020_12.Rmd",
+    "project_path": "EU_2020_12.Rmd",
+    "type": "r_markdown",
+    "hash": "4017369907",
+    "contents": "",
+    "dirty": false,
+    "created": 1607334382105.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "188,0",
+        "scrollLine": "166",
+        "rmdVisualMode": "false",
+        "rmdVisualWrapConfigured": "true",
+        "docOutlineVisible": "0",
+        "rmdVisualModeLocation": "3606:2540",
+        "last_setup_crc32": ""
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1609845344,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1623047544788,
+    "read_only": false,
+    "read_only_alternatives": []
+}

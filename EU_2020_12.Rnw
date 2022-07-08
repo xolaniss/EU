@@ -1,0 +1,1107 @@
+% !TeX program = XeLaTeX
+\documentclass[12pt]{article}
+% \usepackage{fontspec}
+% \setmainfont{Lato}[
+%   Path = font/Lato/,
+%   UprightFont = Lato-Regular,
+%   ItalicFont = Lato-Thin,
+%   BoldFont = Lato-Bold,
+%   BoldItalicFont = Lato-BoldItalic
+% ]
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{charter}
+\usepackage{apacite}
+\usepackage[round]{natbib} 
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage [font={small,bf}, figureposition=top]{caption}
+\usepackage[page,header]{appendix}
+\usepackage{titletoc}
+\usepackage{booktabs,caption}
+\usepackage[flushleft]{threeparttable}
+\usepackage{tabularx}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage[bottom]{footmisc}
+\usepackage{xcolor}
+\usepackage{scrextend}
+\deffootnote[2em]{2em}{1em}{\textsuperscript{\thefootnotemark}\,}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\usepackage[a4paper, width=150mm, top=25mm, bottom=25mm]{geometry}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage{sectsty}
+\definecolor{MyBlue}{RGB}{9,90,155}
+\definecolor{MyBlue1}{RGB}{79,129,189}
+\definecolor{MyBrown}{RGB}{187,124,50}
+\definecolor{MyBrown1}{RGB}{235,124,50}
+\sectionfont{\color{MyBlue}}
+\subsectionfont{\color{MyBlue1}}
+\usepackage{sidenotes}
+\usepackage{comment}
+\usepackage{rotating} 
+\usepackage{lipsum}
+\usepackage{eurosym}
+\usepackage{csquotes}
+\setlength{\parindent}{0pt} %removing paragraph indentation
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\captionsetup[table]{list=yes}
+\captionsetup[figure]{list=yes}
+\pagestyle{plain}
+
+\newgeometry{margin=0cm} %tiny margins
+
+\begin{center}
+\vspace*{3cm}
+\color{black}{\Huge{\textbf{ECONOMIC UPDATE}}}
+\vspace{2.5cm}\\
+\noindent
+\makebox[\textwidth]{\includegraphics[width=\textwidth, height=15cm]{/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/images/Front.jpg}}
+\vfill
+\includegraphics[width = 6cm, height = 2cm]{/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/images/gpt-Logo-Web.jpg}
+\end{center}
+
+\vspace{1cm}
+
+\restoregeometry
+
+\pagenumbering{roman}
+\begin{center}
+\vspace*{8 cm}
+\color{black}{\Huge{\textbf{ECONOMIC UPDATE}}}
+\vspace{10 cm}\\
+\color{MyBlue}\large{\textbf{Third Quarter: 2020/2021}}
+\vfill
+\includegraphics[width = 6cm, height = 2cm]{/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/images/gpt-Logo-Web.jpg}
+\end{center}
+
+\vspace{10cm}
+
+\pagenumbering{roman}
+\section*{Table of Contents}
+\startcontents[sections]
+\printcontents[sections]{1}{1}{\setcounter{tocdepth}{2}}
+\newpage
+
+\listoffigures
+\newpage
+%\listoftables
+%\newpage
+%\section*{Summary}
+\newpage
+
+\pagenumbering{arabic}
+
+% importing data
+<< echo = FALSE>>=
+rm(list = ls())
+SA <-
+  readRDS(file = "/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/South_africa.rds")
+Provinces <-
+  readRDS(file = "/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/Provinces.rds")
+Industry <-
+  readRDS(file = "/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/Industry.rds")
+Labour_profile <-
+  readRDS(file = "/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/Labour_profile.rds")
+Employment <-
+  readRDS(file = "/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/Employment_industry.rds")
+OECD <-
+  readRDS(file = "/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/OECD.rds")
+SA_GDP <-
+  readRDS(file = "/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/SA_GDP.rds")
+
+
+options(xtable.floating = FALSE) #Important. Do not remove
+@
+
+%loading packages
+<< echo = FALSE>>=
+library("tidyverse")
+library("readxl")
+library("zoo")
+library("ggthemes")
+library("gridExtra")
+library("knitr")
+library("kableExtra")
+library("magick")
+library("stringi")
+library("patchwork")
+library("gghighlight")
+library("xtable")
+library("scales")
+library("rvest")
+library("rebus")
+library("PNWColors")
+library("lubridate")
+library("here")
+@
+
+
+%functions
+<< echo = FALSE>>=
+theme <-
+  theme_minimal(base_size = 6) +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "none",) # EU base theme
+theme_set(theme) # setting ggplot theme instead of using theme function
+
+eu_bar <-
+  function(data,
+           mapping,
+           label,
+           color_count,
+           periodicity = 0.25,
+           scale = scale_x_yearqtr) {
+    bar <-  ggplot(data, mapping) +
+      geom_bar(stat = "identity", width = 0.18) +
+      labs(x = "", y = label) +
+      scale_fill_manual(values = pnw_palette("Winter", color_count))
+    
+    if (periodicity == 0.25)
+      bar + scale_x_yearqtr(breaks = seq(
+        from = min(data$Period),
+        to = max(data$Period),
+        by = periodicity
+      ),
+      format = "%Y-Q%q")
+    
+    else
+      bar + scale_x_yearmon(breaks = seq(
+        from = min(data$Period),
+        to = max(data$Period),
+        by = periodicity
+      ),
+      format = "%Y-%b")
+  } # EU bar ggplot with changing x scales
+
+eu_line <-
+  function(data,
+           mapping,
+           label,
+           color_count,
+           periodicity = 0.25) {
+    bar <-  ggplot(data, mapping) +
+      geom_line() +
+      geom_point(size = 2) +
+      labs(x = "", y = label) +
+      scale_color_manual(values = pnw_palette("Winter", color_count))
+    
+    if (periodicity == 0.25)
+      bar + scale_x_yearqtr(breaks = seq(
+        from = min(data$Period),
+        to = max(data$Period),
+        by = periodicity
+      ),
+      format = "%Y-Q%q")
+    
+    else
+      bar +
+      scale_x_yearmon(breaks = seq(
+        from = min(data$Period),
+        to = max(data$Period),
+        by = periodicity
+      ),
+      format = "%Y-%b")
+  } # EU line ggplot with changing x scales
+
+oecd_countries <- function(data, start_period = "2019 Q1"){
+  data %>% 
+    filter(
+    Country %in% c(
+      "OECD",
+      "JPN",
+      "CHN",
+      "USA",
+      "BRA",
+      "DEU",
+      "IND",
+      "GBR",
+      "RUS",
+      "FRA"
+    ),
+    Unit == "PC"
+  ) %>%
+  filter(Period > start_period) %>%
+  mutate(Country = str_replace_all(
+    Country,
+    c(
+      "DEU" = "Germany",
+      "JPN" = "Japan",
+      "USA" = "United States",
+      "BRA" = "Brazil",
+      "IND" = "India",
+      "RUS" = "Russia",
+      "FRA" = "France",
+      "GBR" = "Great Britain"
+    )
+  ))
+  
+} # for cleaning OECD data for specified countries
+
+sa_gdp <- function(data, measure = "Percentage Change", start_period = "2019 Q1" ) {
+  data %>% 
+    filter(Unit == measure, Period > start_period)
+} # for sorting SA_GDP data
+
+@
+
+
+%Content ==========================================================================================
+
+\section{Introduction}
+
+After a swift rebound in economic activity in the second-quarter of 2020, a resurgence in COVID-19 cases threatens to return the global economy to a deeper recession in the fourth quarter. Most major economies are, again, implementing lockdown measures to curb this resurgence. This indicates that the last global economic projections in October may be too optimistic. However, the recently initiated distribution of the various vaccines may boost economic growth in 2021.\\
+
+Current projections from the International Monetary Fund (IMF) suggest a global contraction of 4.4 per cent\footnote{International Monetary Fund. (2020). World Economic Outlook: A Long and Difficult Ascent.}. This is an improved figure from the initial June projections of -4.9 per cent, which was heavily influenced by the second-quarter rebound. However, the April projection is likely to be less optimistic due to COVID-19.\\
+
+Emerging markets such as South Africa were not spared from the recent resurgence in COVID-19 cases. However, the resurgence in cases in emerging markets seemingly lag those of advanced economies. Therefore, the expectations are that 2021 contraction in economic activity will be worse than in 2020. South Africa only implemented more restrictive lockdown measures in the middle of December 2020, suggesting that there may be further restrictions in early 2021 (depending on the response to current COVID-19 lockdown). The negative impact of the COVID-19 lockdown in South Africa is also likely in 2021.\\
+
+In this edition, we contextualize the current economic environment based on the latest available data. We focus on the global, South African, and Gauteng economies. There is no doubt that the uncertainty caused by COVID-19 is unprecedented. Therefore, the economic situation remains highly fluid with constant developments which may not be covered fully in this current edition.
+
+
+\section{Global Economy}
+ 
+\subsection{Economic growth}
+The global economy was heavily impacted by the COVID-19 pandemic in the first half of 2020, especially in the second quarter of 2020 as most economies experienced significant contractions. However, most of the economies seem to have rebounded. The threat of the resurgence of the in the spike of COVID-19, however, looms. Some countries have reinstated much stricter lockdown regulation (for example Australia, Japan, Spain, and France) as they respond to the increasing numbers of the COVID-19 cases\footnote{International Monetary Fund. (2020). World Economic Outlook: A Long and Difficult Ascent.}. \\
+
+Moreover, the rebound in most economies in the second quarter has boosted the global economy to higher growth than initially projected for 2020. The global economy will contract by 4.4 per cent in the 2020\footnote{International Monetary Fund. (2020). World Economic Outlook: A Long and Difficult Ascent.}, as per the IMF`s October projection, which is lower than the -4.9 per cent June projection. 
+
+\begin{figure}[H]
+\caption{Economic Growth in Key Economies}
+\centering
+<< fig = TRUE, width=6, height= 4, echo=FALSE >>=
+
+gross_domestic_product <- read_csv2("/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Markup/ gross_domestic_product_R.csv")
+gross_domestic_product$Period <- as.yearqtr(gross_domestic_product$Period, "%Y Q%q")
+gross_domestic_product$Value <- as.numeric(gross_domestic_product$Value)
+
+gross_domestic_product_gg <-
+  eu_bar(gross_domestic_product, aes(x =  Period, y = Value, fill = Country),"Quarter on Quarter Growth (%)", 9) +
+  facet_wrap(vars(Country), nrow = 3) + 
+  labs(caption = "Source: Organization for Economic Cooperation and Development (2020)")
+plot0 <- gross_domestic_product_gg
+print(plot0   + plot_layout(guides = "collect"))
+
+@
+\end{figure}
+
+The improvement in the aggregate economic growth of the Organization for Economic Cooperation and Development (OECD) member countries from -10.5 per cent quarter-on-quarter (q-o-q) to 9 per cent q-o-q, as most of the member countries, resumed with most of their economic operation in the third quarter. Nevertheless, the year-on-year (y-o-y) numbers show the deep recession asserted by the 2020 IMF growth projection. Y-o-y OECD growth for the third was -4.1 per cent. Which means, although the growth improved in the third quarter when compared to the second, the economic performance is still lower than should have been without the impact of COVID-19. The exception was China as it recorded positive y-o-y growth for the third quarter due to its success in managing the COVID-19 pandemic.  \\
+
+In the second-quarter of 2020, industrial production improved in most economies from its trough in April.  China showed almost stable growth throughout 2020 and is the only country which achieved above baseline industrial output growth in the third quarter\footnote{International Monetary Fund. (2020). World Economic Outlook: A Long and Difficult Ascent.}.
+
+
+\subsection{Industrial Production}
+
+In some countries, the downturn in the industrial output was not unique to 2020, as global industrial output had already slowed down in 2019. The impact of the COVID-19 just made the drop in output to be much steeper. However, in the third quarter, some signs of recovery were visible in most economies, but production remains lower than 2019, hence the y-o-y comparison remains in the negative territory. In addition, some of the industrialized economies have experienced a second COVID-19 wave and this is expected to negatively impact on future growth.
+
+\begin{figure}[H]
+\caption{Industrial Output in Key Economies}
+\centering
+<< fig = TRUE, width=6, height= 4, echo=FALSE >>=
+industrial_production <- read_csv2("/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Markup/industrial_production_R.csv")
+industrial_production$Period <- as.yearqtr(industrial_production$Period, "%Y Q%q")
+industrial_production$Value <- as.numeric(industrial_production$Value)
+
+industrial_production_gg <-
+  eu_bar(industrial_production, aes(x =  Period, y = Value, fill = Country), 
+  "Quarter on Quarter Growth (%)", 8) +
+  facet_wrap(vars(Country), nrow = 2) +
+  coord_flip() +
+  labs(caption = "Source: Organization for Economic Cooperation and Development (2020)")
+  
+plot_1 <-  industrial_production_gg
+print(plot_1 + plot_layout(guides = "collect"))
+
+@
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\caption{Manufacturing Confidence Index in Key Economies}
+
+<< fig = TRUE, width=6, height= 4, echo=FALSE >>=
+manufacuturing_confidence <- oecd_countries(OECD$manufacturing_confidence) 
+
+manufacuturing_confidence_gg <-
+  eu_line(manufacuturing_confidence,
+         aes(x =  Period, y = Value, col = Country), "Quarter on Quarter Change (%)", 6) +
+  facet_wrap(vars(Country), nrow = 2) +
+  labs(caption = "Source: Organization for Economic Cooperation and Development (2020)")
+
+plot_2 <-  manufacuturing_confidence_gg
+print(plot_2    + plot_layout(guides = "collect"))
+
+@
+\end{figure}
+
+Sentiment in the manufacturing sector remains depressed as the future in the manufacturing sector remains uncertain as a result of a spike in COVID-19 cases in some economies.  It is also important to note the future of manufacturing distribution across the world will also weigh on uncertainty, as most industrialized economies are likely to considering take-over the previously outsourced manufacturing operations due to the COVID-19 pandemic\footnote{United Nations Industrial Development Organization. (2020). World Manufacturing Production Statistics for Quarter III 2020.}. Thus, affecting countries which depend on these outsourced operations.
+
+
+\subsection{Retail Sales}
+
+The retail sector was significantly hit in the second quarter when social distancing regulations in most economies were stringent. As regulations were relaxed, the retail sector was able to recover in the third quarter.
+
+\begin{figure}[H]
+\caption{Retail Sales}
+\centering
+<< fig = TRUE, width=6, height= 4, echo=FALSE >>=
+retail_sales <- read_csv2("/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/Markup/retail_sales_R.csv")
+retail_sales$Period <- as.yearqtr(retail_sales$Period, "%Y Q%q")
+retail_sales$Value <- as.numeric(retail_sales$Value)
+
+retail_sales_gg <-
+  eu_bar(retail_sales, aes(x =  Period, y = Value, fill = Country), "Quarter on Quarter Growth (%)", 6) +
+  facet_wrap(vars(Country), nrow = 2) +
+  labs(caption = "Source: Organization for Economic Cooperation and Development (2020)")
+plot3 <- retail_sales_gg
+print(plot3 + plot_layout(guides = "collect"))
+
+@
+\end{figure}
+
+
+However, the OECD data shows the global retail sales started to grow above baseline since the last month of the second quarter, and retail sales for the OECD countries only breakthrough the baseline in the third quarter\footnote{Organization for Economic Cooperation and Development. (2020). OECD Economic Outlook, Volume 2020 Issue 2.}.
+
+
+\subsection{Policy interventions}
+
+Most economies continue to mitigate the impact of the COVID-19 through macro-economic policies, a slower rate of new infections, and managing health systems to handle testing and recoveries was achieved. Hence, economic growth rate projections were stronger than projected, and the lockdown regulations were relaxed. However, many economies experienced a resurgence of COVID-19 cases, which increased the need to enforce the interventions which were already in place during the first wave of infections\footnote{Organization for Economic Cooperation and Development. (2020). OECD Economic Outlook, Volume 2020 Issue 2.}. Therefore, to reduce the uncertainty related to the second wave becoming a reality more economies need to emphasize on the successful policies and revise when it is needed to address the existing challenges.\\
+
+The US has differentiated the COVID-19 containment measures according to states. Most of the states in the US imposed new restrictions on business and activities to respond to the second wave\footnote{International Monetary Policy. (2020). Policy Responses to COVID-19.}.  Although, the US president has signed an order to cease the fiscal stimulus packages. Stimulus packages remain the fundamental part of protecting the economy and the social security of its citizens from the impact of the COVID-19. The US Congress has since approved the stimulus package.\\
+
+The United Kingdom has protected their citizens from the challenge of unemployment from deteriorating even further by offering compensation of 1000 pounds per person who retained a worker during the crisis and has also offered minimum wage for 25 hours per week for six months for young workers at risk of long-term unemployment. These are amongst other relives which were implemented by the UK government.\\
+
+On the other hand, many emerging-market economies and developing countries have extensive borrowing abroad to reduce the impact of the COVID-19 which has added to existing challenges from the high sovereign or corporate debt before the crisis. This has forced most of these economies to focus on debt restructuring for some of these, increased transparency about the full extent of indebtedness, including contingent liabilities, and a more developed framework on how to deal with sovereign bankruptcy that includes all major creditors.
+
+
+\section{South Africa Economy}
+
+\subsection{Economic growth}
+
+The South African economy was already facing a low-growth environment with growth rates fluctuating around 0 per cent in 2019 due to global factors such as trade tensions between the US and China, and the volatile oil prices. As well as domestic factors such as load-shedding, credit-rating downgrades and drought.\\
+
+Then, in the second-quarter of 2020, a national lockdown was implemented to slow the spread of the COVID-19 pandemic and the growth rate fell to negative 17.5 per cent y-o-y, or negative 51.7 per cent q-o-q (seasonally adjusted and annualised (s-a-a)). This heavily reduced economic activity across the board as non-essential business was prohibited. In the third quarter, the lockdown was relaxed, and there was a recovery with a 66.1 per cent q-o-q growth rate due to strong base effects, though the y-o-y growth rate remained negative at negative 6 per cent.
+
+\begin{figure}[H]
+\caption{Gross Domestic Product}
+\centering
+<< fig = TRUE, width=6, height=3, echo=FALSE >>=
+sa_gdp_yy <- sa_gdp(SA_GDP$`Gdp At Market Prices`)
+sa_gdp_qq <-
+  sa_gdp(SA_GDP$`Gdp At Market Prices`, "Annualised Percentage Change")
+
+sa_gdp_yy_gg <-
+  eu_bar(sa_gdp_yy,
+         aes(x =  Period, y = Value, fill = Unit),
+         "Year on Year Growth (%)",
+         1) + coord_flip() 
+  
+sa_gdp_qq_gg <-
+  eu_line(
+    sa_gdp_qq ,
+    aes(x = Period, y = Value, col = Unit),
+    "Annualised Quarter on Quarter Growth (%)",
+    1
+  ) + labs(caption = "Source: Statistics South Africa (2020). Note: The annualised data is seasonally adjusted and constant ")
+
+plot_4 <- sa_gdp_yy_gg + sa_gdp_qq_gg 
+print(plot_4    + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+
+The agriculture, forestry and fishing sector performed well in 2020 growing by 19.6 per cent q-o-q (s-a-a) in the second quarter of 2020 when most sectors lost a large percentage of their production. This was due to good harvests and the fact that much of the industry is considered essential and was able to operate during the lockdown. Unfortunately, the industry`s small size limited the degree to which it could offset the overall effect of the lockdown. The mining and quarrying sector recorded low growth in 2019 and the first half of 2020 due to reduced global demand and domestic electricity supply disruptions and lockdown restrictions. There was a recovery in the third quarter, driven by the iron ore, gold and platinum group metals\footnote{Statistics South Africa. (2020). Mining: Production and sales - August 2020. Accessed (on December 2020) at www.statssa.gov.za}. \\
+
+The low growth of industries such as construction, manufacturing and the wholesale and retail trade reflects low business and consumer confidence, with the large percentage increases in the third quarter of 2020 being attributable to the very strong base effect that follows from losing an average of about 70 per cent of their production in the second quarter. The resilient finance and business services sector was recording positive growth rates in 2019 and the first quarter of 2020 and then had one of smaller contractions in the second quarter of 2020, at negative 34.2 per cent, as much of the industry can work effectively from home. This did, however, translate into also recording one of the smaller recoveries in the third quarter due to the smaller base effects, at 16.5 per cent. The government services sector was also resilient as government must always keep providing service delivery to South Africans and recorded rates of change in the single digits over the period under review.
+
+
+\begin{figure}[H]
+\caption{Industry Growth}
+\centering
+<< fig = TRUE, width=6, height=5, echo=FALSE >>=
+sa_gdp_industry <- do.call(rbind, SA_GDP) %>%
+  filter(
+    Name %in%
+      c(
+        "Agriculture, Forestry And Fishing",
+        "Construction",
+        "Electricity, Gas And Water",
+        "Finance, Real Estate And Business Services",
+        "General Government Services",
+        "Manufacturing",
+        "Mining And Quarrying",
+        "Personal Sevices" ,
+        "Transport, Storage And Communication",
+        "Wholesale And Retail Trade, Hotels And Restaurants"
+      ),
+    Period > "2019 Q1",
+    Unit == "Annualised Percentage Change"
+  )
+
+sa_gdp_industry_gg <-
+  eu_bar(
+    sa_gdp_industry ,
+    aes(x = Period, y = Value, fill = Name),
+    "Annualised Quarter on Quarter Growth (%)",
+    10
+  ) +
+  facet_wrap(vars(Name), ncol = 3, scales = "free") +  coord_flip() +
+   labs(caption = "Source: Statistics South Africa (2020)")
+
+plot_5 <- sa_gdp_industry_gg
+print(plot_5   + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+
+\subsection{Consumer and business confidence}
+
+Business and consumer confidence have been low and trending downwards due to low economic growth, persistently high unemployment and downgrades of South Africa’s debt rating by credit rating agencies. Confidence declined more sharply when news about COVID-19 began to spread and did so even further when the national lockdown was imposed. The lifting of the lockdown and easing of restrictions led to confidence recovering, with high growth rates recorded for both due to the base effects of the large lockdown decreases. The effect of this reduced confidence can be seen in the falling retail and vehicle sales over the same period (see Figure 7). Retail and vehicle sales have since recovered somewhat, but remain below pre-lockdown growth levels. 
+
+
+\begin{figure}[H]
+\caption{Consumer and Business Confidence}
+\centering
+<< fig = TRUE, width=6, height=4.6, echo=FALSE >>=
+sa_cci <-
+  SA$South_Africa_CCI %>% mutate(Period = as.yearqtr(Period)) %>% pivot_longer(-Period, "measure", "value") %>% filter(measure == "Year to Year % Change", Period > "2019 Q1")
+sa_bci <-
+  SA$South_Africa_BCI %>% mutate(Period = as.yearqtr(Period)) %>% pivot_longer(-Period, "measure", "value") %>% filter(measure == "Year to Year % Change", Period > "2019 Q1")
+sa_retail_sales <-
+  SA$South_Africa_Retail_Sales %>%  mutate(Period = as.yearmon(Period)) %>% pivot_longer(-Period, "measure", "value") %>% filter(measure == "Year to Year % Change", Period > "October 2019")
+sa_vehicle_sales <-
+  SA$South_Africa_Vehicle_Sales %>% select(Period:`Year to Year % Change`) %>%  pivot_longer(-Period, "measure", "value") %>% mutate(Period = as.yearmon(Period)) %>% filter(measure == "Year to Year % Change", Period > "October 2019")
+
+sa_cci_gg <-
+  eu_line(sa_cci,
+          aes(x = Period, y = value),
+          "Consumer Confidence Index (y-o-y (%))",
+          1) + geom_line(color = "#33454e") + geom_point(aes(fill = value), color = "#33454e") +
+   labs(caption = "Source: Bureau for Economic Research (2020)")
+  
+sa_bci_gg <-
+  eu_line(sa_bci,
+          aes(x = Period, y = value),
+          "Business Confidence Index (y-o-y (%))",
+          1) + geom_line(color = "#537380") + geom_point(aes(fill = value), color = "#537380") +
+   labs(caption = "Source: Bureau for Economic Research (2020)")
+sa_retail_sales_gg <-
+  eu_line(
+    sa_retail_sales,
+    aes(x = Period, y = value),
+    "Retail Sales (y-o-y (%))",
+    1,
+    periodicity = 1 / 12
+  ) + geom_line(color = "#81a9ad") + geom_point(aes(fill = value), color =  "#81a9ad") +
+  labs(caption = "Source: Statistics South Africa (2020))")
+sa_vehicle_sales_gg <-
+  eu_line(
+    sa_vehicle_sales,
+    aes(x = Period, y = value),
+    "Vehicle Sales (y-o-y (%))",
+    1,
+    periodicity = 1 / 12
+  ) + geom_line(color = "#2d2926") + geom_point(aes(fill = value), color = "#2d2926") +
+   labs(caption = "Source: NAAMSA (2020)")
+
+plot_7 <-
+  (sa_cci_gg  + sa_bci_gg) / (sa_retail_sales_gg + sa_vehicle_sales_gg)
+print(plot_7   + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+
+\subsection{Labour market}
+
+Statistics South Africa’s data collection has been impacted by the COVID-19 pandemic\footnote{Statistics South Africa. (2020), Quarterly Labour Force Survey – 2020Q3}. Face-to-face data collection has been suspended for the safety of field staff and respondents and replaced with telephonic surveys. This has necessitated various assumptions and corrections on behalf of Statistics South Africa. Households with telephones that could not be contacted in the second quarter of 2020 were assumed to have maintained the same employment status assigned to them in the first quarter of 2020. These households were also assumed to have maintained the same employment status that they were assigned in the fourth quarter of 2019, except for the workers who became employed in the fourth quarter of 2019 after being unemployed or Not Economically Active (NEA).\\
+
+Since temporary jobs that exist only in the fourth quarter of each year are commonplace, these temporary job holders were treated as non-respondents for the first quarter of 2020 as their employment status could not be estimated to an acceptable degree. Households without telephones could not be contacted as a group and therefore this group has significantly different labour market characteristics from households with telephones. As a result, bias correction techniques were applied. Additional estimation required for the publications surveyed under COVID-19 resulted in publications with a larger margin of error. Furthermore, changes in data collection methodology mean that these publications are not truly comparable with publications that were unaffected by the pandemic.\\
+
+Employment growth was already marginally negative in the second half of 2019 due to a low-growth environment and the resulting low business confidence. The lockdown saw many businesses retrenching workers as the restrictions to their operations reduced their ability to afford staff.\\
+
+The recovery should lead to the rehiring of many workers as businesses will need labour to bring their operations back online, but changes in employment typically lag changes in economic growth so this effect will likely be somewhat delayed. Despite this, unemployment decreased under lockdown due to many of those who lost their jobs becoming Not Economically Active rather than unemployed. Usually, these persons would enter the discouraged work seekers category because they had given up on finding work. In this case, however, large numbers of persons listed their reason for not working as being unable to travel, which placed them in the ‘Other Not Economically Active’ category instead of discouraged work-seekers.
+
+
+\begin{figure}[H]
+\caption{Labour Market}
+\centering
+<< fig = TRUE, width=6, height=7, echo=FALSE >>=
+sa_labour_profile <- Labour_profile$South_Africa_labour_profile
+sa_labour_profile[sa_labour_profile == ''] <- NA
+sa_labour_profile <-
+  sa_labour_profile %>% fill(Sector, .direction = "down") %>%  pivot_longer(-c(Sector, Measure), "Period", "value") %>%
+  mutate(Period = as.yearqtr(Period)) %>%
+  filter(Measure != "Thousands")
+sa_labour_profile <-
+  sa_labour_profile %>% filter(Sector != " Industry Agriculture",
+                               Sector != " Industry Private households")
+sa_labour_profile_gg <-
+  eu_bar(sa_labour_profile , aes(x = Period, y = value, fill = Sector), "", 14) +
+  facet_wrap(vars(Sector, Measure), ncol = 3) +
+  labs(caption = "Source: Statistics South Africa (2020)")
+
+plot_8 <- sa_labour_profile_gg
+print(plot_8   + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+The figure above shows that South Africa’s labour force was estimated at 21.2 million persons in the third quarter of 2020. This was an increase of approximately 15.1 per cent quarter on quarter and a decrease of approximately 8.2 per cent y-o-y. The quarterly increase of the labour force reflects a recovery from a relatively lower labour force in the second quarter caused by a significantly higher number of NEA persons resulting from the imposed lockdown regulations.\\
+
+The lockdown also harmed employment opportunities, with a decrease of 13.6 per cent quarter on quarter and a decrease of 13.3 per cent year y-o-y estimated for the second quarter of 2020. This decline in employment opportunities left approximately 14.1 million workers employed. The informal and private household sectors were hit particularly hard, with quarter on quarter decreases of 21.9 and 23.6 per cent in employment, respectively. The relatively smaller employment decrease of 10.8 per cent in the formal sector was likely influenced by the increased difficulty retrenching formal workers due to fixed-term contracts and the fact that a larger portion of formal sector jobs can be performed remotely. However, employment rebounded in the third quarter, when it increased by 15.1 per cent, and the largest employment increase in absolute terms was the sector. Moreover, despite the third-quarter increase in employment, an annual comparison shows a decrease in employment.\\
+
+The number of unemployed persons increased by 52.1 per cent and reached 6.5 million in the third-quarter after it decreased by 39.2 per cent to 4.3 million during the second quarter. The increase was largely due to discouraged work-seekers re-entering the market and increase the labour force, thus unemployment number. Hence the labour force participation rate recovered after it had dropped by 13pp to 47 per cent in the second and recovered to 54.2 per cent in the third quarter. The second quarter movements in the labour market are in line with those observed in the rest of the world as a result of the pandemic.
+\subsection{Consumer prices}
+
+Consumer Price Inflation (CPI) remained relatively low due to the weak demand brought on by sluggish economic growth. In the second quarter of 2020, this was exacerbated by the lockdown. There has been a recovery since the lockdown was lifted but not to pre-pandemic levels. Essential products such as food and water have remained relatively steady as demand for these is more reliable. Transport costs fell sharply due to reduced demand during the lockdown and have not returned to pre-pandemic levels due to reduced fuel costs that in turn resulted from a stronger rand and lower oil prices. However, oil prices have been rising again recently after an oil tanker exploded in a Saudi Arabian port and this will likely translate into fuel prices rising again in South Africa which would lead to the prices of other goods increased as transport costs rise.
+
+\begin{figure}[H]
+\caption{Consumer Inflation}
+\centering
+<< fig = TRUE, width=6, height=5, echo=FALSE >>=
+sa_cpi <-
+  SA$South_Africa_CPI %>% mutate(Period = as.yearmon(Period)) %>%
+  pivot_longer(-Period, "category", "value") %>%
+  filter(Period > "October 2019")
+
+sa_cpi_gg <-
+  eu_line(
+    sa_cpi ,
+    aes(x = Period, y = value, col = category),
+    "Consumer Price Inflation (%)",
+    6,
+    periodicity = 1 / 12
+  ) + facet_wrap(vars(category), nrow = 2) +
+  labs(caption = "Source: Statistics South Africa (2020)")
+
+
+plot_9 <- sa_cpi_gg
+print(plot_9   + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+
+\subsection{Policy interventions}
+
+The government of South Africa responded swiftly and decisively to the COVID-19 pandemic. The country was placed into lockdown at Alert Level 5 on the 26th of March, per the Regulations to Address, Prevent and Combat the Spread of Coronavirus COVID-19 amendment to the Disaster Management Act\footnote{South African Government. (2020). Disaster Management Act: Regulations to address, prevent and combat the spread of COVID-19: Amendment. Accessed (on September 2020) at www.gov.za}. At Alert Level 5, every person was required to remain within their place of residence, unless strictly to perform an essential service, obtain an essential good or service, collecting a social grant, pension or seeking life-saving, emergency, or chronic medical attention. There were also restrictions on the transport of non-essential goods for this period and the sale of non-essential goods was prohibited. Those stores and other workplaces that were permitted to operate were required to ensure social distancing of employees and customers and the following of hygiene regulations within their premises, while all other gatherings besides funerals were banned. This was done to limit the spread of the highly contagious COVID-19, saving lives by preventing the health system being overwhelmed by a massive initial wave of cases.\\
+
+From the 1st of May, the Alert Level was lowered to 4 and it has continued to be lowered as the spread of the virus has remained relatively contained while the capacity of the health system has been expanded. Currently, Alert Level 1 is in place, but the government has warned that the Alert Level may be raised again if needed. To slow the further spread of COVID-19 as the second wave of infections has begun, the curfew has been extended to begin at 22:00 in hotspot areas and 23:00 in the rest of the country until 04:00 in both cases\footnote{South African Government. (2020). Government Gazette No. 43997, 15 December 2020, page 3. Government printers}. Municipalities are required to state on their websites and in local media if they are being declared a hotspot. Hygiene and social distancing regulations remain in place across the country.\\
+
+The government recognises that these measures, while needed in these challenging times, are disruptive to the economy and the livelihoods of citizens. As such, the government has provided a range of economic relief measures. Examples of these include the COVID-19 Agricultural Disaster Support Fund offers support for smallholders and communal farmers with a minimum annual turnover of R20 000 but not exceeding R1mn, who are South African citizens, have been farming for at least 12 months and who grow food.\\
+
+Furthermore, the Debt Relief Finance Scheme, which is a soft-loan facility that is available to existing Small, Medium and Micro Enterprises (SMMEs) that have been negatively affected by the COVID-19 pandemic in order keep them afloat for a period of up to 6 months.  SMME’s who locally manufacture or supply hygiene, medical products, and food items which are in demand to curb and manage the spread of the COVID-19 virus can also apply for funding under the Business Growth/Resilience Facility. \\
+
+The tourism sector has been particularly hard hit by COVID-19 with restrictions on travel and a likelihood that consumers will, for a significant time, remain less comfortable with travel than they were pre-pandemic. The Tourism Relief Fund provides once-off grant assistance of up to R50 000 to SMMEs in the tourism value chain to ensure their sustainability. South African businesses that are tax compliant and have a turnover of R50mn or less will be allowed to delay 20 per cent of their employees’ tax liabilities over four months, as well as a portion of their provisional corporate income tax payments without penalties or interest over six months. This intervention is expected to assist 75 000 small and medium enterprises. Also, all tax compliant South African businesses can apply to the South African Revenue Service (SARS) for tax relief measures including, a tax subsidy to employers of up to R500 per month for the four months for private-sector employees earning below R6 500 under the Employment Tax Incentive; this is expected to assist over 4 million workers. SARS will also accelerate the payment of employment tax incentive reimbursements from twice a year to monthly, to get cash to tax compliant employers as soon as possible. Any employee that contributed to the Unemployment Insurance Fund (UIF) and whose employer is unable to pay salaries ≠as a result of the lockdown period can apply for the UIF COVID-19 Relief Benefit while their salary is unavailable. Employees are encouraged to apply through their employer so that applications can be aggregated to facilitate the filing of an unusually high number of applications. Any unemployed South African who is over 18 years of age and does not currently receive any other social grant, UIF payment or National Student Financial Aid Scheme stipend may apply for the Social Relief Grant.\\
+
+The Loan Guarantee Scheme is an initiative to provide loans, guaranteed by the government, to businesses with an annual turnover of less than R300mn, to meet some of their operational expenses. Government and commercial banks are sharing the risks of these loans and businesses can apply for these loans at their bank. National Treasury has provided a guarantee of R100bn to this scheme, with the option to increase the guarantee to R200bn if it is deemed necessary and if the scheme is deemed successful. Government has also regulated against unfair price increases during the COVID-19 pandemic for basic foods and consumer items, emergency products and services and medical and hygiene supplies\footnote{South African Government. (2020). Coronavirus Lockdown: Regulations on Price Increase Protection Fact Sheet. Accessed (on September 2020) at www.gov.za}. A price increase is prohibited when it does not correspond to the increase in the cost of providing that good or service and companies may not increase their net margin above the average margin they recorded in the three months before the first of March 2020.\\
+
+South Africa saw a resurgence in COVID-19 cases in early December 2020 which prompted a return to Alert Level 3 adjusted restrictions. This is most likely to have placed a damper on festive spending and therefore on fourth-quarter GDP growth. The extent and period of these current lockdown measures remain to be seen.
+
+\newpage
+\section{Gauteng Economy}
+
+\subsection{Economic growth}
+
+The Gauteng economy rebounded by 49.2 per cent q-o-q in the third quarter, after it had contracted by 49.16 per cent in the second quarter. However, the magnitude of the rebound was due to base effects from the second-quarter. Moreover, the magnitude of the rebound was less than the second-quarter`s significant contraction, which means the economy`s production capacity is yet to reach pre-COVID-19 impact levels. Evidently, the Gauteng`s GDP in the first quarter (prior to the COVID-19 shock) was R1.1 trillion, and the third quarter was R1 trillion after it rebounded from second-quarter`s R900 billion. 
+
+\begin{figure}[H]
+\caption{Regional Gross Domestic Product}
+\centering
+<< fig = TRUE, width=6, height=4, echo=FALSE >>=
+regional_gdp <-
+  Provinces$Province_GDP %>% mutate(Period = as.yearqtr(Period)) %>%
+  pivot_longer(-Period, "province", "value") %>%
+  filter(Period > "2018 Q4")
+
+regional_gdp_gg <-
+  eu_bar(
+    regional_gdp ,
+    aes(x = Period, y = value, fill = province),
+    "Quarter on Quarter Growth (%)",
+    10
+  ) + facet_wrap(vars(province), ncol = 3) +
+  labs(caption = "Source: Quantec Research (2020). Note: All GDP data is seasonally adjusted and constant.")
+
+plot_10 <-
+  regional_gdp_gg
+print(plot_10   + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+
+The rebound in the Gauteng economy came after the government relaxed most the lockdown regulations, this allows most of the productive sectors to resume their production. The resumption of the of most businesses together with the relaxation in COVID-19 restrictions was able to improve consumer and business confidence, and thus improving economic activity. This has allowed some provinces, particularly Mpumalanga, Northern Cape and Limpopo, to grow by more 100 per cent. This was due, to the mining sector doing exceptionally well in these provinces, as they resumed with their operations. As shown above, economic growth in Gauteng was dragged by the mining sector, as its economic growth rate was lower than the national growth rate.    
+
+
+\begin{figure}[H]
+\caption{Gauteng Industry Growth}
+\centering
+<< fig = TRUE, width=6, height=6.5, echo=FALSE >>=
+gauteng_industry_gdp <- Industry$Province_Industry_Growth
+gauteng_industry_gdp[gauteng_industry_gdp == ''] <- NA
+gauteng_industry_gdp[gauteng_industry_gdp == ' '] <- NA
+gauteng_industry_gdp <-
+  gauteng_industry_gdp %>% fill(Sector, .direction = "down") %>%  pivot_longer(-c(Sector, Measure), "Period", "value") %>%
+  mutate(Period = as.yearqtr(Period)) %>%
+  filter(Measure == " % Change") %>%
+  mutate(
+    Sector = str_replace_all(
+      Sector,
+      "Wholesale and retail trade; hotels and restaurants ",
+      "Wholesale and retail trade, and hotels"
+    ),
+    Measure = str_replace_all(Measure,
+                              " % Change",
+                              "Quarter on Quarter Growth (%)")
+  )
+
+gauteng_industry_gdp_gg <-
+  eu_bar(gauteng_industry_gdp,
+         aes(x = Period, y = value, fill = Sector),
+         "",
+         14) + facet_wrap(vars(Sector, Measure), ncol = 3) + coord_flip() +
+   labs(caption = "Source: Quantec Research (2020)")
+
+plot_11 <- gauteng_industry_gdp_gg
+print(plot_11   + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+
+All the sectors in the Gauteng economy recovered during the third quarter, except for the mining sector which contracted by 64.8 per cent q-o-q. This was not in line with the national mining sector growth which grew by 288 per cent q-o-q and had the highest growth amongst other sectors. Moreover, the Gauteng mining sector has been contracting in five consecutive quarters since the third quarter of 2019. On the other hand, the manufacturing sector had the highest growth rate in third-quarter and which was also a recovery point after contracting in the previous four quarters. The wholesale and retail trade, hotels and restaurants sector performed well in the third quarter with a growth rate of 124 per cent, recovering from 69 per cent contraction. It is important to note that, although all the sectors except mining had positive growth in the third quarter, in real GDP value terms they are all yet to growth above the pre-COVID-19 pandemic levels (except for the agricultural sector).   
+
+\newpage
+\subsection{Labour market}
+
+The Gauteng unemployment rate declined in the second quarter of 2020 to reach 26.4 per cent, equating to 5 percentage points (pp) when compared to the first quarter. This was the lowest unemployment rate since the fourth quarter of 2014\footnote{Statistics South Africa. (2014). Quarterly Labour Force Survey- 2014Q4.}. The decline was not, however, indicative of an improving labour market but instead reflects the unemployment rate definition used in Statistics South Africa’s Quarterly Labour Force Survey (QLFS). This definition requires that eligible job seekers actively look for work to be classified as unemployed, which was impossible during the lockdown. Thus, as per the official definition, the unemployment rate fell. This is despite job losses of over half a million in the second quarter of 2020, which were the highest since the QLFS started.
+
+\begin{figure}[H]
+\caption{Provincial Unemployment Rates}
+\centering
+<< fig = TRUE, width=6, height=5, echo=FALSE >>=
+regional_unemployment <-
+  Provinces$Province_Unemployment %>% mutate(Period = as.yearqtr(Period)) %>%
+  pivot_longer(-Period, "province", "value") %>%
+  filter(Period > "2018 Q4")
+
+regional_unemployment_gg <-
+  eu_line(regional_unemployment , aes(x = Period, y = value, col = province), "Unemployment Rate (%)", 10) +     
+  facet_wrap(vars(province), ncol = 3) +
+  labs(caption = "Source: Statistics South Africa (2020)")
+
+plot_12 <- regional_unemployment_gg
+print(plot_12 + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+The lockdown restrictions were relaxed in the third quarter of 2020, which increased the number of people who were looking for work, and the unemployment rate reverted to its trend of high unemployment; reaching 33.7 per cent in the third quarter of 2020. Moreover, employment in the third was very low relative to the labour force growth and high levels of unemployment, hence the spike in the unemployment rate.\\
+
+The number of discouraged work-seekers grew further in the second quarter of 2020. This indicates that the labour market in Gauteng was not favourable to those who were looking for work, resulting in more people dropping out of the active labour market. Subsequently, the labour force participation rate also fell, as a result of lower labour force activity combined with an increase in discouraged work-seekers, caused by the lockdown.\\
+
+Although the lockdown has caused historical job losses, average quarterly employment growth was -1.0 per cent between the first quarter of 2019 and the first quarter of 2020. During this same period, the size of the labour force increased by 1.0 per cent. This means that employment growth was declining even before the impact of the lockdown.
+
+
+
+\begin{figure}[H]
+\caption{Gauteng Labour Profile}
+\centering
+<< fig = TRUE, width=6, height=5, echo=FALSE >>=
+gauteng_labour_profile <- Labour_profile$Province_labour_profile
+gauteng_labour_profile[gauteng_labour_profile == ''] <- NA
+gauteng_labour_profile <-
+  gauteng_labour_profile %>% fill(Sector, .direction = "down") %>%  pivot_longer(-c(Sector, Measure), "Period", "value") %>%
+  mutate(Period = as.yearqtr(Period)) %>%
+  filter(Measure != "Thousands")
+gauteng_labour_profile <-
+  gauteng_labour_profile %>% filter(Sector != " Industry Agriculture",
+                                    Sector != " Industry Private households")
+
+gauteng_labour_profile_gg <-
+  eu_bar(gauteng_labour_profile,
+         aes(x = Period, y = value, fill = Sector),
+         "%",
+         14) +
+  facet_wrap(vars(Sector, Measure), ncol = 3) +
+  labs(caption = "Source: Statistics South Africa (2020)")
+
+plot_13 <- gauteng_labour_profile_gg
+print(plot_13 + plot_layout(guides = "collect"))
+@
+\end{figure}
+
+
+\subsection{Policy interventions}
+
+The current expectations are that as holiday markers return to Gauteng, COVID-19 cases in the province will rise rapidly. As of January 3, 2021, Gauteng had a total number of 298 068 COVID-19 cases\footnote{Gauteng Government. (2021). Media Statement: Gauteng Confirmed COVID-19 Cases District Breakdown}. Therefore, the province is currently implementing the current Alert Level 3 regulations. \\
+
+Also implemented are province-specific initiatives such as testing returning motorists and improving bed capacity in hospital in anticipation of the resurgence in COVID-19 cases. The Department of Community Safety continues to implement various initiatives to ensure that motorist comply with current regulations. The aim the first-quarter of 2021 will continue to be to minimise COVID-19 related disruptions to the economy
+
+\section{Concluding Remarks}
+
+Indications are that from an economic perspective 2021 will be a difficult year for several reasons. First, the resurgence of COVID-19 cases in the second wave is more aggressive than in the first wave suggesting that the death toll will be higher. Second, vaccination programs are likely to take longer than expected to have an impact as health systems are overwhelmed by the current number of COVID-19 cases. Lastly, the positive impact of the vaccination programs will likely be outweighed by the realization of the full economic impact of the pandemic which may include sovereign debt crises in some countries. It is now clear that South Africa will not avert the second wave of COVID-19 cases, and this will have an impact of 2021 economic prospects, Gauteng included.
+
+\newpage
+\appendix
+\captionsetup[table]{list=no}
+
+\section*{Selected Data}
+\addcontentsline{toc}{section}{Selected Data}
+\startcontents[sections]
+\printcontents[sections]{1}{1}{\setcounter{tocdepth}{2}}
+\pagenumbering{Alph}
+
+\newpage
+\section{South African Economy}
+\subsection{Economic Growth}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Gross Domestic Product (\%)}
+<<echo=FALSE, results=tex>>=
+SA$South_Africa_GDP$Period <- as.character(SA$South_Africa_GDP$Period)
+South_africa_GDP <- xtable(SA$South_Africa_GDP, auto = TRUE)
+align(South_africa_GDP) <- c("l","l","Y","Y","Y","Y")
+print(South_africa_GDP, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny") 
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Gross Domestic Product by Industry (\%)}
+<<echo=FALSE, results=tex>>=
+South_africa_industry <- xtable(Industry$South_Africa_Industry_Growth, auto = TRUE)
+align(South_africa_industry) <- "lllYYYY"
+print(South_africa_industry, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny") 
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+
+\newpage
+\subsection{Investment}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Investment by Organisation Type (R million)}
+<<echo=FALSE, results=tex>>=
+SA$South_Africa_inv$Period <- as.character(SA$South_Africa_inv$Period)
+
+South_africa_inv <- xtable(SA$South_Africa_inv, auto = TRUE)
+align(South_africa_inv) <- c("l","l","Y","Y","Y", "Y")
+print(South_africa_inv, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: South African Reserve Bank, 2020}}
+\end{table}
+
+\newpage
+\subsection{Labour Profile}
+
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Labour Profile}
+
+<<echo=FALSE, results=tex>>=
+South_africa_Labour <- xtable(Labour_profile$South_Africa_labour_profile, auto = TRUE)
+align(South_africa_Labour) <- "lllYYYY"
+print(South_africa_Labour, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny") 
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+\begin{table}[H]
+ \renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Employment by Industry}
+<<echo=FALSE, results=tex>>=
+South_africa_employment <- xtable(Employment$South_Africa_Employment_Industry, auto = TRUE)
+align(South_africa_employment) <- "lllYYYY"
+print(South_africa_employment, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny") 
+@
+   \vspace{-2mm}
+ \caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+\newpage
+\subsection{Consumer Price Index}
+
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Consumer Price Index (\%)}
+<<echo=FALSE, results=tex>>=
+SA$South_Africa_CPI$Period <- as.character(SA$South_Africa_CPI$Period)
+
+South_africa_CPI <- xtable(SA$South_Africa_CPI, auto = TRUE)
+align(South_africa_CPI) <- "llYYYYY"
+print(South_africa_CPI, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny") 
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+\newpage
+\subsection{Business Confidence}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Business Confidence}
+<<echo=FALSE, results=tex>>=
+SA$South_Africa_BCI$Period <- as.character(SA$South_Africa_BCI$Period)
+South_africa_BCI <- xtable(SA$South_Africa_BCI, auto = TRUE)
+align(South_africa_BCI) <- "llYYY"
+print(South_africa_BCI, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny") 
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Bureau of Economic Research, 2020}}
+\end{table}
+
+\newpage
+\subsection{Consumer Confidence}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Consumer Confidence}
+<<echo=FALSE, results=tex>>=
+South_africa_CCI <- xtable(SA$South_Africa_CCI, auto = TRUE)
+align(South_africa_CCI) <- "llYYYY"
+print(South_africa_CCI, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Bureau of Economic Research, 2020}}
+\end{table}
+
+\newpage
+\subsection{Retail Sales}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Retail Sales}
+<<echo=FALSE, results=tex>>=
+South_africa_Retail <- xtable(SA$South_Africa_Retail_Sales, auto = TRUE)
+align(South_africa_Retail) <- "llYYYY"
+print(South_africa_Retail, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+\newpage
+\subsection{Vehicle Sales}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Vehicle Sales}
+<<echo=FALSE, results=tex>>=
+South_africa_Vehicle<- xtable(SA$South_Africa_Vehicle_Sales, auto = TRUE)
+align(South_africa_Vehicle) <- "llYYYYYY"
+print(South_africa_Vehicle, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: National Association of Automobile Manufactures, 2020}}
+\end{table}
+
+\newpage
+\subsection{Commodity Prices}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Commodity Prices}
+<<echo=FALSE, results=tex>>=
+South_africa_Commodities<- xtable(SA$South_Africa_Commodity_Prices, auto = TRUE)
+align(South_africa_Commodities) <- "llYYYYYY"
+print(South_africa_Commodities, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Bloomberg, 2020}}
+\end{table}
+
+\newpage
+\subsection{Fuel Prices}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Fuel Prices (R cents)}
+<<echo=FALSE, results=tex>>=
+South_africa_Fuel <- xtable(SA$South_Africa_Fuel_Prices, auto = TRUE)
+align(South_africa_Fuel) <- "llYYYY"
+print(South_africa_Fuel, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Department of Minerals and Energy, 2020}}
+\end{table}
+
+\newpage
+\subsection{Exchange Rates}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Exchange Rates}
+<<echo=FALSE, results=tex>>=
+South_africa_Exc <- xtable(SA$South_Africa_exr, auto = TRUE)
+align(South_africa_Exc) <- "llYYYYYYYY"
+print(South_africa_Exc, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Bloomberg, 2020}}
+\end{table}
+
+\newpage
+\subsection{Current Account}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Current Account}
+<<echo=FALSE, results=tex>>=
+SA$South_Africa_current_account$Period <- as.character(SA$South_Africa_current_account$Period)
+South_africa_CA <- xtable(SA$South_Africa_current_account, auto = TRUE)
+align(South_africa_CA ) <- "llYYYY"
+print(South_africa_CA , include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: South African Reserve Bank, 2020}}
+\end{table}
+
+
+\newpage
+\section{Provincial Economies}
+
+\subsection{Economic Growth}
+
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Gross Domestic Product by Region (\%)}
+<<echo=FALSE, results=tex>>=
+Provinces_GDP <- xtable(Provinces$Province_GDP, auto = TRUE)
+align(Provinces_GDP) <- "llYYYYYYYYY"
+print(Provinces_GDP, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa and Quantec Research, 2020}}
+\end{table}
+
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Gauteng Gross Domestic Product by Industry (\%)}
+<<echo=FALSE, results=tex>>=
+Provinces_growth_ind <- xtable(Industry$Province_Industry_Growth  , auto = TRUE)
+align(Provinces_growth_ind) <- "lllYYYY"
+print(Provinces_growth_ind, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+\newpage
+\subsection{Labour Profile}
+
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Gauteng Labour Profile}
+<<echo=FALSE, results=tex>>=
+Provinces_labour <- xtable(Labour_profile$Province_labour_profile, auto = TRUE)
+align(Provinces_labour) <- "lllYYYY"
+print(Provinces_labour, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+
+
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{\Alph {table}}
+\caption{Unemployment by Province (\%)}
+<<echo=FALSE, results=tex>>=
+Provinces$Province_Unemployment$Period <- as.character(Provinces$Province_Unemployment$Period)
+Provinces_unemployment <- xtable(Provinces$Province_Unemployment, auto = TRUE)
+align(Provinces_unemployment) <- "llYYYYYYYYY"
+print(Provinces_unemployment, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+
+
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{AA}
+\caption{Gauteng Employment by Industry}
+<<echo=FALSE, results=tex>>=
+Provinces_employment <- xtable(Employment$Province_employment_industry, auto = TRUE)
+align(Provinces_employment) <- "lllYYYY"
+print(Provinces_employment, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+\newpage
+\subsection{Consumer Confidence}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{BB}
+\caption{Gauteng Consumer Confidence}
+<<echo=FALSE, results=tex>>=
+Provinces_CCI <- xtable(Provinces$Province_CCI, auto = TRUE)
+align(Provinces_CCI ) <- "llYYYY"
+print(Provinces_CCI, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Bureau of Economic Research, 2020}}
+\end{table}
+
+\newpage
+\subsection{Consumer Price Index}
+\begin{table}[H]
+\renewcommand{\tablename}{Panel}
+\renewcommand{\thetable}{CC}
+ \caption{Consumer Price Index (\%)}
+<<echo=FALSE, results=tex>>=
+Provinces$Province_CPI$Period <- as.character(Provinces$Province_CPI$Period)
+Provinces_CPI <- xtable(Provinces$Province_CPI, auto = TRUE)
+align(Provinces_CPI ) <- "llYYYYYYYYY"
+print(Provinces_CPI, include.rownames = FALSE, booktabs = TRUE, NA.string = "NA", tabular.environment = "tabularx", width = "\\textwidth", size = "\\tiny")
+@
+ \vspace{-2mm}
+\caption*{\scriptsize{Source: Statistics South Africa, 2020}}
+\end{table}
+
+
+%Back Cover
+
+\newgeometry{top=0mm, bottom=0mm, right=0mm, left=-6.4mm} %tiny margins
+
+\includegraphics[width=\paperwidth, height=\paperheight]{/Users/xolanisibande/Desktop/EU_Analysis/Sweave/EU_2020_12/images/Back.jpg}
+
+\restoregeometry
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

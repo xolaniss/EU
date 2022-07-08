@@ -1,0 +1,26 @@
+{
+    "id": "3E12CAEE",
+    "path": "~/Desktop/EU_Analysis/Sweave/EU_2020_12/Data/WEO_country.R",
+    "project_path": "WEO_country.R",
+    "type": "r_source",
+    "hash": "1241489114",
+    "contents": "",
+    "dirty": false,
+    "created": 1607417936850.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "75,14",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1606899783,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1606899783,
+    "read_only": false,
+    "read_only_alternatives": []
+}
